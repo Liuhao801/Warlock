@@ -21,7 +21,12 @@ class Player extends GameObject{
 
         this.eps=0.1  //浮点精度
 
-        this.cur_skill=null;  //当前选中的技能
+        this.cur_skill=null;  //当前选中的技能(fireball,iceball,lightningball,flash)
+
+        if(this.is_me){
+            this.img = new Image();
+            this.img.src = this.playground.root.settings.photo;
+        }
     }
 
     start(){
@@ -51,6 +56,8 @@ class Player extends GameObject{
                     outer.shoot_ball(tx,ty,"iceball");
                 }else if(outer.cur_skill==="lightningball"){
                     outer.shoot_ball(tx,ty,"lightningball");
+                }else if(outer.cur_skill==="flash"){
+                    outer.do_flash(tx,ty);
                 }
 
                 outer.cur_skill=null;
@@ -67,6 +74,9 @@ class Player extends GameObject{
             }else if(e.which===69){  //E键
                 outer.cur_skill="lightningball";
                 return false;
+            }else if(e.which===70){  //F键
+                outer.cur_skill="flash";
+                return false;
             }
         });
     }
@@ -76,6 +86,17 @@ class Player extends GameObject{
         let angle=Math.atan2(ty-y,tx-x);
         let vx=Math.cos(angle),vy=Math.sin(angle);
         new Ball(this.playground,this,x,y,vx,vy,type);
+    }
+
+    do_flash(tx,ty){  //闪现
+        let angle=Math.atan2(ty-this.y,tx-this.x);  //arctan(y,x)
+        this.vx=Math.cos(angle);
+        this.vy=Math.sin(angle);
+        this.x+=this.vx*this.playground.height*0.2;
+        this.y+=this.vy*this.playground.height*0.2;
+
+        this.vx=this.vy=0;
+        this.move_length=0;
     }
 
     get_dist(x1,y1,x2,y2){
@@ -163,10 +184,20 @@ class Player extends GameObject{
     }
 
     render(){
-        this.ctx.beginPath();
-        this.ctx.arc(this.x,this.y,this.radius,0,Math.PI*2,false);  //画圆
-        this.ctx.fillStyle=this.color;
-        this.ctx.fill();
+        if(this.is_me){
+            this.ctx.save();
+            this.ctx.beginPath();
+            this.ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2, false);
+            this.ctx.stroke();
+            this.ctx.clip();
+            this.ctx.drawImage(this.img, this.x - this.radius, this.y - this.radius, this.radius * 2, this.radius * 2); 
+            this.ctx.restore();
+        }else{
+            this.ctx.beginPath();
+            this.ctx.arc(this.x,this.y,this.radius,0,Math.PI*2,false);  //画圆
+            this.ctx.fillStyle=this.color;
+            this.ctx.fill();
+        }
     }
 
     on_destory(){
