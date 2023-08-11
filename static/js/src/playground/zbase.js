@@ -9,7 +9,7 @@ class GamePlayground{
 
 
     get_color(){
-        let colors=["red","yellow","blue","green","pink","purple","Gray","Orange"];
+        let colors=["red","yellow","blue","green","pink","purple","Gray","Orange","Aqua","Gold"];
         return colors[Math.floor(Math.random()*colors.length)];
     }
 
@@ -29,7 +29,7 @@ class GamePlayground{
         this.players=[];
         this.players.push(new Player(this,this.width/2,this.height/2,this.height*0.05,"snow",this.height*0.2,true));
 
-        for(let i=0;i<5;i++){
+        for(let i=0;i<7;i++){
             this.players.push(new Player(this,this.width/2,this.height/2,this.height*0.05,this.get_color(),this.height*0.2,false));
         }
 

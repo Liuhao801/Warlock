@@ -482,7 +482,7 @@ class GamePlayground{
 
 
     get_color(){
-        let colors=["red","yellow","blue","green","pink","purple","Gray","Orange"];
+        let colors=["red","yellow","blue","green","pink","purple","Gray","Orange","Aqua","Gold"];
         return colors[Math.floor(Math.random()*colors.length)];
     }
 
@@ -502,7 +502,7 @@ class GamePlayground{
         this.players=[];
         this.players.push(new Player(this,this.width/2,this.height/2,this.height*0.05,"snow",this.height*0.2,true));
 
-        for(let i=0;i<5;i++){
+        for(let i=0;i<7;i++){
             this.players.push(new Player(this,this.width/2,this.height/2,this.height*0.05,this.get_color(),this.height*0.2,false));
         }
 
@@ -615,8 +615,12 @@ class Settings{
     }
 
     start(){
-        this.getinfo();
-        this.add_listening_events();
+        if(this.platform==="ACAPP"){
+            this.getinfo_acapp();
+        }else if(this.platform==="WEB"){
+            this.getinfo_web();
+            this.add_listening_events();
+        }
     }
 
     add_listening_events(){
@@ -625,7 +629,7 @@ class Settings{
         this.add_listening_events_register();
 
         this.$acwing_login.click(function(){
-            outer.acwing_login();
+            outer.web_login();
         });
     }
 
@@ -723,7 +727,7 @@ class Settings{
         }
     }
 
-    acwing_login(){
+    web_login(){  //web端第三方授权登录
         $.ajax({
             url:'https://app5846.acapp.acwing.com.cn/settings/acwing/web/apply_code/',
             type:'GET',
@@ -735,7 +739,32 @@ class Settings{
         });
     }
 
-    getinfo(){
+    acapp_login(appid,redirect_uri,scope,state){  //acapp端第三方授权登录
+        let outer=this;
+        this.root.AcWingOS.api.oauth2.authorize(appid, redirect_uri, scope, state, function(resp){
+            if(resp.result==='success'){
+                outer.username=resp.username;
+                outer.photo=resp.photo;
+                outer.hide();
+                outer.root.menu.show();
+            }
+        });
+    }
+
+    getinfo_acapp(){
+        let outer=this;
+        $.ajax({
+            url:'https://app5846.acapp.acwing.com.cn/settings/acwing/acapp/apply_code/',
+            type:'GET',
+            success:function(resp){
+                if(resp.result==='success'){
+                    outer.acapp_login(resp.appid,resp.redirect_uri,resp.scope,resp.state);
+                }
+            }
+        });
+    }
+
+    getinfo_web(){
         let outer=this;
 
         $.ajax({
