@@ -10,14 +10,14 @@ class Ball extends GameObject{
         this.vy=vy;
         this.type=type;  //球的类型
 
-        this.radius=this.playground.height*0.01;  //半径
-        this.move_length=this.playground.height*1;  //射程
+        this.radius=0.01;  //半径
+        this.move_length=1;  //射程
 
         this.damage=0;//伤害
         this.color="";
         this.speed=0;
 
-        this.eps=0.1;
+        this.eps=0.01;
 
         this.start();
     }
@@ -25,17 +25,17 @@ class Ball extends GameObject{
     start(){
         if(this.type==="fireball"){  //四发一个
             this.color="#FF4500";
-            this.speed=this.playground.height*0.5;
-            this.damage=this.playground.height*0.01;
+            this.speed=0.5;
+            this.damage=0.01;
         }else if(this.type==="iceball"){  //减速、五发一个
             this.color="#146EA6";
-            this.speed=this.playground.height*0.4;
-            this.damage=this.playground.height*0.008;
+            this.speed=0.4;
+            this.damage=0.008;
         }else if(this.type==="lightningball"){  //一击必杀
             this.color="#4DFFFB";
-            this.speed=this.playground.height*4;
-            this.damage=this.playground.height*0.04;
-            this.move_length=this.playground.height*2;
+            this.speed=4;
+            this.damage=0.05;
+            this.move_length=2;
         }
     }
 
@@ -80,8 +80,9 @@ class Ball extends GameObject{
 
 
     render(){
+        let scale=this.playground.scale;
         this.ctx.beginPath();
-        this.ctx.arc(this.x,this.y,this.radius,0,Math.PI*2,false);
+        this.ctx.arc(this.x*scale,this.y*scale,this.radius*scale,0,Math.PI*2,false);
         this.ctx.fillStyle=this.color;
         this.ctx.fill();
     }

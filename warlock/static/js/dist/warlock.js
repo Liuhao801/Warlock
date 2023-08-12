@@ -35,10 +35,11 @@ class GameMenu{
         let outer=this;
         this.$single_mode.click(function(){
             outer.hide();
-            outer.root.playground.show();
+            outer.root.playground.show("single_mode");
         });
         this.$multi_mode.click(function(){
-            console.log("click multi mode");
+            outer.hide();
+            outer.root.playground.show("multi_mode");
         });
         this.$settings.click(function(){
             outer.root.settings.logout_on_remote();
@@ -62,7 +63,18 @@ class GameObject{
 
         this.has_called_start=false;  //是否调用过start()函数
         this.timedelta=0;  //当前帧距离上一帧的时间间隔(ms)
+        this.uuid=this.create_uuid();  //创建唯一编号
 
+
+    }
+
+    create_uuid(){
+        let res="";
+        for(let i=0;i<10;i++){
+            let x=parseInt(Math.floor(Math.random()*10));  //random返回[0,1)之间的数
+            res+=x;
+        }
+        return res;
     }
 
     start(){  //创建是执行一次
@@ -120,10 +132,16 @@ class GameMap extends GameObject{
     start(){
     }
 
+    resize(){
+        this.ctx.canvas.width=this.playground.width;
+        this.ctx.canvas.height=this.playground.height;
+        this.ctx.fillStyle="rgba(0,0,0,1)";
+        this.ctx.fillRect(0,0,this.ctx.canvas.width,this.ctx.canvas.height);
+    }
     update(){
         this.render();
     }
-    
+
     render(){
         this.ctx.fillStyle="rgba(0,0,0,0.2)";
         this.ctx.fillRect(0,0,this.ctx.canvas.width,this.ctx.canvas.height);
@@ -145,7 +163,7 @@ class Particle extends GameObject{
         this.move_length=move_length;
 
         this.friction=0.9;
-        this.eps=1;
+        this.eps=0.01;
     }
 
     start(){
@@ -167,14 +185,15 @@ class Particle extends GameObject{
     }
 
     render(){
+        let scale=this.playground.scale;
         this.ctx.beginPath();
-        this.ctx.arc(this.x,this.y,this.radius,0,Math.PI*2,false);
+        this.ctx.arc(this.x*scale,this.y*scale,this.radius*scale,0,Math.PI*2,false);
         this.ctx.fillStyle=this.color;
         this.ctx.fill();
     }
 }
 class Player extends GameObject{
-    constructor(playground,x,y,radius,color,speed,is_me){
+    constructor(playground,x,y,radius,color,speed,character,username,photo){
         super();
         this.playground=playground;
         this.ctx=this.playground.game_map.ctx;
@@ -186,7 +205,9 @@ class Player extends GameObject{
         this.radius=radius;  //圆的半径
         this.color=color;
         this.speed=speed;
-        this.is_me=is_me;  //判断是否是本人
+        this.character=character;  //me,enemy,robot
+        this.username=username;
+        this.photo=photo;
         this.spent_time=0;  //创建后经过的时间
 
         this.damage_x=0;
@@ -194,22 +215,22 @@ class Player extends GameObject{
         this.damage_speed=0;  //受到伤害后的移动速度
         this.friction=this.playground.friction;  //地形的摩擦力
 
-        this.eps=0.1  //浮点精度
+        this.eps=0.01  //浮点精度
 
         this.cur_skill=null;  //当前选中的技能(fireball,iceball,lightningball,flash)
 
-        if(this.is_me){
+        if(this.character!=='robot'){
             this.img = new Image();
-            this.img.src = this.playground.root.settings.photo;
+            this.img.src = this.photo;
         }
     }
 
     start(){
-        if(this.is_me){  //只监听自己的鼠标操作
+        if(this.character==="me"){  //只监听自己的鼠标操作
             this.add_listening_events();
-        }else{  //随机移动
-            let tx=Math.random()*this.playground.width;
-            let ty=Math.random()*this.playground.height;
+        }else if(this.character==="robot"){  //随机移动
+            let tx=Math.random()*this.playground.width/this.playground.scale;
+            let ty=Math.random()*this.playground.height/this.playground.scale;
             this.move_to(tx,ty);
         }
     }
@@ -221,7 +242,7 @@ class Player extends GameObject{
         });
         this.playground.game_map.$canvas.mousedown(function(e){
             const rect=outer.ctx.canvas.getBoundingClientRect();
-            const tx=e.clientX-rect.left,ty=e.clientY-rect.top;  //转化为画布的相对坐标
+            const tx=(e.clientX-rect.left)/outer.playground.scale,ty=(e.clientY-rect.top)/outer.playground.scale;  //转化为画布的相对坐标
             if(e.which===3){  //点击鼠标右键
                 outer.move_to(tx,ty);
             }else if(e.which===1 && outer.spent_time>4){  //点击左键
@@ -267,8 +288,8 @@ class Player extends GameObject{
         let angle=Math.atan2(ty-this.y,tx-this.x);  //arctan(y,x)
         this.vx=Math.cos(angle);
         this.vy=Math.sin(angle);
-        this.x+=this.vx*this.playground.height*0.2;
-        this.y+=this.vy*this.playground.height*0.2;
+        this.x+=this.vx*0.2;
+        this.y+=this.vy*0.2;
 
         this.vx=this.vy=0;
         this.move_length=0;
@@ -301,7 +322,7 @@ class Player extends GameObject{
         }
 
         this.radius-=damage;  //受到伤害半径变小
-        if(this.radius<this.playground.height*0.02){
+        if(this.radius<=this.eps){
             this.destory();
             return false;
         }
@@ -317,9 +338,14 @@ class Player extends GameObject{
     }
 
     update(){
+        this.update_move();
+        this.render();
+    }
+
+    update_move(){  //更新移动
         this.spent_time+=this.timedelta/1000;
 
-        if(!this.is_me && this.spent_time>4 && Math.random()<1/180.0){  //4秒钟后,人机每3s向玩家发射一枚ball
+        if(this.character==="robot" && this.spent_time>4 && Math.random()<1/180.0){  //4秒钟后,人机每3s向玩家发射一枚ball
             let player=this.playground.players[0];  //玩家
 
             let tx=player.x+player.vx*player.speed*player.timedelta/1000*0.3;  //预判玩家0.3s后的位置
@@ -332,7 +358,7 @@ class Player extends GameObject{
             }
         }
 
-        if(this.damage_speed>this.playground.height*0.01){  //受到伤害
+        if(this.damage_speed>0.01){  //受到伤害
             this.vx=this.vy=0;
             this.move_length=0;
             this.x+=this.damage_x*this.damage_speed*this.timedelta/1000;
@@ -342,9 +368,9 @@ class Player extends GameObject{
             if(this.move_length<this.eps){  //移动到目标地点
                 this.move_length=0;
                 this.vx=this.vy=0;
-                if(!this.is_me){  //随机移动
-                    let tx=Math.random()*this.playground.width;
-                    let ty=Math.random()*this.playground.height;
+                if(this.character==="robot"){  //随机移动
+                    let tx=Math.random()*this.playground.width/this.playground.scale;
+                    let ty=Math.random()*this.playground.height/this.playground.scale;
                     this.move_to(tx,ty);
                 }
             }else{
@@ -354,22 +380,21 @@ class Player extends GameObject{
                 this.move_length-=moved;
             }
         }
-
-        this.render();
     }
 
     render(){
-        if(this.is_me){
+        let scale=this.playground.scale;
+        if(this.character!=="robot"){
             this.ctx.save();
             this.ctx.beginPath();
-            this.ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2, false);
+            this.ctx.arc(this.x*scale, this.y*scale, this.radius*scale, 0, Math.PI * 2, false);
             this.ctx.stroke();
             this.ctx.clip();
-            this.ctx.drawImage(this.img, this.x - this.radius, this.y - this.radius, this.radius * 2, this.radius * 2); 
+            this.ctx.drawImage(this.img, (this.x - this.radius)*scale, (this.y - this.radius)*scale, this.radius * 2*scale, this.radius * 2*scale);
             this.ctx.restore();
         }else{
             this.ctx.beginPath();
-            this.ctx.arc(this.x,this.y,this.radius,0,Math.PI*2,false);  //画圆
+            this.ctx.arc(this.x*scale,this.y*scale,this.radius*scale,0,Math.PI*2,false);  //画圆
             this.ctx.fillStyle=this.color;
             this.ctx.fill();
         }
@@ -395,14 +420,14 @@ class Ball extends GameObject{
         this.vy=vy;
         this.type=type;  //球的类型
 
-        this.radius=this.playground.height*0.01;  //半径
-        this.move_length=this.playground.height*1;  //射程
+        this.radius=0.01;  //半径
+        this.move_length=1;  //射程
 
         this.damage=0;//伤害
         this.color="";
         this.speed=0;
 
-        this.eps=0.1;
+        this.eps=0.01;
 
         this.start();
     }
@@ -410,17 +435,17 @@ class Ball extends GameObject{
     start(){
         if(this.type==="fireball"){  //四发一个
             this.color="#FF4500";
-            this.speed=this.playground.height*0.5;
-            this.damage=this.playground.height*0.01;
+            this.speed=0.5;
+            this.damage=0.01;
         }else if(this.type==="iceball"){  //减速、五发一个
             this.color="#146EA6";
-            this.speed=this.playground.height*0.4;
-            this.damage=this.playground.height*0.008;
+            this.speed=0.4;
+            this.damage=0.008;
         }else if(this.type==="lightningball"){  //一击必杀
             this.color="#4DFFFB";
-            this.speed=this.playground.height*4;
-            this.damage=this.playground.height*0.04;
-            this.move_length=this.playground.height*2;
+            this.speed=4;
+            this.damage=0.05;
+            this.move_length=2;
         }
     }
 
@@ -465,10 +490,61 @@ class Ball extends GameObject{
 
 
     render(){
+        let scale=this.playground.scale;
         this.ctx.beginPath();
-        this.ctx.arc(this.x,this.y,this.radius,0,Math.PI*2,false);
+        this.ctx.arc(this.x*scale,this.y*scale,this.radius*scale,0,Math.PI*2,false);
         this.ctx.fillStyle=this.color;
         this.ctx.fill();
+    }
+}
+class MultiPlayerSocket{
+    constructor(playground){
+        this.playground=playground;
+        this.ws=new WebSocket("wss://app5846.acapp.acwing.com.cn/wss/multiplayer/");
+        this.uuid="";
+        this.start();
+    }
+
+    start(){
+        this.receive();
+    }
+
+    receive(){
+        let outer=this;
+        this.ws.onmessage=function(e){  //接受后端的信息
+            let data=JSON.parse(e.data);
+            let uuid=data.uuid;
+            if(uuid===outer.uuid)return false;
+
+            let event=data.event;
+            if(event==="create_player"){
+                outer.receive_create_player(uuid,data.username,data.photo);
+            }
+        };
+    }
+
+    send_create_player(username,photo){
+        let outer=this;
+        this.ws.send(JSON.stringify({
+            'event':'create_player',
+            'uuid':outer.uuid,
+            'username':username,
+            'photo':photo,
+        }));
+    }
+
+    receive_create_player(uuid,username,photo){
+        let player = new Player(
+            this.playground,
+            this.playground.width/2/this.playground.scale,
+            0.5,
+            0.05,
+            "snow",
+            0.2,
+            'enemy',
+            username,
+            photo
+        );
     }
 }
 class GamePlayground{
@@ -477,6 +553,7 @@ class GamePlayground{
         this.$playground=$(`<div class="game-playground"></div>`);
 
         this.hide();
+        this.root.$game.append(this.$playground);
         this.start();
     }
 
@@ -487,23 +564,48 @@ class GamePlayground{
     }
 
     start(){
+        let outer=this;
+        $(window).resize(function(){  //监听窗口大小
+            outer.resize();
+        });
     }
 
-    show(){  //打开playground界面
+    resize(){  //根据窗口大小调整画布大小
+        this.width=this.$playground.width();
+        this.height=this.$playground.height();
+        let unit=Math.min(this.width/16,this.height/9);
+        this.width=unit*16;
+        this.height=unit*9;
+        this.scale=this.height;  //基准
+
+        if(this.game_map)this.game_map.resize();
+    }
+
+    show(mode){  //打开playground界面
+        let outer=this;
         this.$playground.show();
 
-        this.root.$game.append(this.$playground);
         this.width=this.$playground.width();
         this.height=this.$playground.height();
         this.friction=0.7;  //地形的摩擦力
 
         this.game_map=new GameMap(this);
+        this.resize();
 
         this.players=[];
-        this.players.push(new Player(this,this.width/2,this.height/2,this.height*0.05,"snow",this.height*0.2,true));
+        this.players.push(new Player(this,this.width/2/this.scale,0.5,0.05,"snow",0.2,"me",this.root.settings.username,this.root.settings.photo));
 
-        for(let i=0;i<7;i++){
-            this.players.push(new Player(this,this.width/2,this.height/2,this.height*0.05,this.get_color(),this.height*0.2,false));
+        if(mode==="single_mode"){
+            for(let i=0;i<7;i++){
+                this.players.push(new Player(this,this.width/2/this.scale,0.5,0.05,this.get_color(),0.2,"robot"));
+            }
+        }else if(mode==="multi_mode"){
+            this.mps=new MultiPlayerSocket(this);
+            this.mps.uuid=this.players[0].uuid;
+
+            this.mps.ws.onopen=function(){  //成功建立连接后
+                outer.mps.send_create_player(outer.root.settings.username,outer.root.settings.photo);
+            };
         }
 
     }

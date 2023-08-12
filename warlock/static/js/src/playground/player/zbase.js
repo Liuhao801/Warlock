@@ -1,5 +1,5 @@
 class Player extends GameObject{
-    constructor(playground,x,y,radius,color,speed,is_me){
+    constructor(playground,x,y,radius,color,speed,character,username,photo){
         super();
         this.playground=playground;
         this.ctx=this.playground.game_map.ctx;
@@ -11,7 +11,9 @@ class Player extends GameObject{
         this.radius=radius;  //圆的半径
         this.color=color;
         this.speed=speed;
-        this.is_me=is_me;  //判断是否是本人
+        this.character=character;  //me,enemy,robot
+        this.username=username;
+        this.photo=photo;
         this.spent_time=0;  //创建后经过的时间
 
         this.damage_x=0;
@@ -19,22 +21,22 @@ class Player extends GameObject{
         this.damage_speed=0;  //受到伤害后的移动速度
         this.friction=this.playground.friction;  //地形的摩擦力
 
-        this.eps=0.1  //浮点精度
+        this.eps=0.01  //浮点精度
 
         this.cur_skill=null;  //当前选中的技能(fireball,iceball,lightningball,flash)
 
-        if(this.is_me){
+        if(this.character!=='robot'){
             this.img = new Image();
-            this.img.src = this.playground.root.settings.photo;
+            this.img.src = this.photo;
         }
     }
 
     start(){
-        if(this.is_me){  //只监听自己的鼠标操作
+        if(this.character==="me"){  //只监听自己的鼠标操作
             this.add_listening_events();
-        }else{  //随机移动
-            let tx=Math.random()*this.playground.width;
-            let ty=Math.random()*this.playground.height;
+        }else if(this.character==="robot"){  //随机移动
+            let tx=Math.random()*this.playground.width/this.playground.scale;
+            let ty=Math.random()*this.playground.height/this.playground.scale;
             this.move_to(tx,ty);
         }
     }
@@ -46,7 +48,7 @@ class Player extends GameObject{
         });
         this.playground.game_map.$canvas.mousedown(function(e){
             const rect=outer.ctx.canvas.getBoundingClientRect();
-            const tx=e.clientX-rect.left,ty=e.clientY-rect.top;  //转化为画布的相对坐标
+            const tx=(e.clientX-rect.left)/outer.playground.scale,ty=(e.clientY-rect.top)/outer.playground.scale;  //转化为画布的相对坐标
             if(e.which===3){  //点击鼠标右键
                 outer.move_to(tx,ty);
             }else if(e.which===1 && outer.spent_time>4){  //点击左键
@@ -92,8 +94,8 @@ class Player extends GameObject{
         let angle=Math.atan2(ty-this.y,tx-this.x);  //arctan(y,x)
         this.vx=Math.cos(angle);
         this.vy=Math.sin(angle);
-        this.x+=this.vx*this.playground.height*0.2;
-        this.y+=this.vy*this.playground.height*0.2;
+        this.x+=this.vx*0.2;
+        this.y+=this.vy*0.2;
 
         this.vx=this.vy=0;
         this.move_length=0;
@@ -126,7 +128,7 @@ class Player extends GameObject{
         }
 
         this.radius-=damage;  //受到伤害半径变小
-        if(this.radius<this.playground.height*0.02){
+        if(this.radius<=this.eps){
             this.destory();
             return false;
         }
@@ -142,9 +144,14 @@ class Player extends GameObject{
     }
 
     update(){
+        this.update_move();
+        this.render();
+    }
+
+    update_move(){  //更新移动
         this.spent_time+=this.timedelta/1000;
 
-        if(!this.is_me && this.spent_time>4 && Math.random()<1/180.0){  //4秒钟后,人机每3s向玩家发射一枚ball
+        if(this.character==="robot" && this.spent_time>4 && Math.random()<1/180.0){  //4秒钟后,人机每3s向玩家发射一枚ball
             let player=this.playground.players[0];  //玩家
 
             let tx=player.x+player.vx*player.speed*player.timedelta/1000*0.3;  //预判玩家0.3s后的位置
@@ -157,7 +164,7 @@ class Player extends GameObject{
             }
         }
 
-        if(this.damage_speed>this.playground.height*0.01){  //受到伤害
+        if(this.damage_speed>0.01){  //受到伤害
             this.vx=this.vy=0;
             this.move_length=0;
             this.x+=this.damage_x*this.damage_speed*this.timedelta/1000;
@@ -167,9 +174,9 @@ class Player extends GameObject{
             if(this.move_length<this.eps){  //移动到目标地点
                 this.move_length=0;
                 this.vx=this.vy=0;
-                if(!this.is_me){  //随机移动
-                    let tx=Math.random()*this.playground.width;
-                    let ty=Math.random()*this.playground.height;
+                if(this.character==="robot"){  //随机移动
+                    let tx=Math.random()*this.playground.width/this.playground.scale;
+                    let ty=Math.random()*this.playground.height/this.playground.scale;
                     this.move_to(tx,ty);
                 }
             }else{
@@ -179,22 +186,21 @@ class Player extends GameObject{
                 this.move_length-=moved;
             }
         }
-
-        this.render();
     }
 
     render(){
-        if(this.is_me){
+        let scale=this.playground.scale;
+        if(this.character!=="robot"){
             this.ctx.save();
             this.ctx.beginPath();
-            this.ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2, false);
+            this.ctx.arc(this.x*scale, this.y*scale, this.radius*scale, 0, Math.PI * 2, false);
             this.ctx.stroke();
             this.ctx.clip();
-            this.ctx.drawImage(this.img, this.x - this.radius, this.y - this.radius, this.radius * 2, this.radius * 2); 
+            this.ctx.drawImage(this.img, (this.x - this.radius)*scale, (this.y - this.radius)*scale, this.radius * 2*scale, this.radius * 2*scale);
             this.ctx.restore();
         }else{
             this.ctx.beginPath();
-            this.ctx.arc(this.x,this.y,this.radius,0,Math.PI*2,false);  //画圆
+            this.ctx.arc(this.x*scale,this.y*scale,this.radius*scale,0,Math.PI*2,false);  //画圆
             this.ctx.fillStyle=this.color;
             this.ctx.fill();
         }

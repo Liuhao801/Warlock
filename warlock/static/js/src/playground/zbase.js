@@ -4,6 +4,7 @@ class GamePlayground{
         this.$playground=$(`<div class="game-playground"></div>`);
 
         this.hide();
+        this.root.$game.append(this.$playground);
         this.start();
     }
 
@@ -14,23 +15,48 @@ class GamePlayground{
     }
 
     start(){
+        let outer=this;
+        $(window).resize(function(){  //监听窗口大小
+            outer.resize();
+        });
     }
 
-    show(){  //打开playground界面
+    resize(){  //根据窗口大小调整画布大小
+        this.width=this.$playground.width();
+        this.height=this.$playground.height();
+        let unit=Math.min(this.width/16,this.height/9);
+        this.width=unit*16;
+        this.height=unit*9;
+        this.scale=this.height;  //基准
+
+        if(this.game_map)this.game_map.resize();
+    }
+
+    show(mode){  //打开playground界面
+        let outer=this;
         this.$playground.show();
 
-        this.root.$game.append(this.$playground);
         this.width=this.$playground.width();
         this.height=this.$playground.height();
         this.friction=0.7;  //地形的摩擦力
 
         this.game_map=new GameMap(this);
+        this.resize();
 
         this.players=[];
-        this.players.push(new Player(this,this.width/2,this.height/2,this.height*0.05,"snow",this.height*0.2,true));
+        this.players.push(new Player(this,this.width/2/this.scale,0.5,0.05,"snow",0.2,"me",this.root.settings.username,this.root.settings.photo));
 
-        for(let i=0;i<7;i++){
-            this.players.push(new Player(this,this.width/2,this.height/2,this.height*0.05,this.get_color(),this.height*0.2,false));
+        if(mode==="single_mode"){
+            for(let i=0;i<7;i++){
+                this.players.push(new Player(this,this.width/2/this.scale,0.5,0.05,this.get_color(),0.2,"robot"));
+            }
+        }else if(mode==="multi_mode"){
+            this.mps=new MultiPlayerSocket(this);
+            this.mps.uuid=this.players[0].uuid;
+
+            this.mps.ws.onopen=function(){  //成功建立连接后
+                outer.mps.send_create_player(outer.root.settings.username,outer.root.settings.photo);
+            };
         }
 
     }

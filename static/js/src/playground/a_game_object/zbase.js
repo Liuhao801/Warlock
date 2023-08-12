@@ -6,7 +6,18 @@ class GameObject{
 
         this.has_called_start=false;  //是否调用过start()函数
         this.timedelta=0;  //当前帧距离上一帧的时间间隔(ms)
+        this.uuid=this.create_uuid();  //创建唯一编号
 
+
+    }
+
+    create_uuid(){
+        let res="";
+        for(let i=0;i<10;i++){
+            let x=parseInt(Math.floor(Math.random()*10));  //random返回[0,1)之间的数
+            res+=x;
+        }
+        return res;
     }
 
     start(){  //创建是执行一次
