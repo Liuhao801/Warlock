@@ -198,7 +198,9 @@ class Settings{
     }
 
     logout_on_remote(){  //登出远程服务器
-        if(this.platform==="ACAPP")return false;
+        if(this.platform==="ACAPP"){
+            this.root.AcWingOS.api.window.close();
+        }
 
         if(this.platform==="WEB"){
             $.ajax({
@@ -233,6 +235,8 @@ class Settings{
                 outer.photo=resp.photo;
                 outer.hide();
                 outer.root.menu.show();
+            }else{
+                this.root.AcWingOS.api.window.close();
             }
         });
     }
@@ -245,6 +249,8 @@ class Settings{
             success:function(resp){
                 if(resp.result==='success'){
                     outer.acapp_login(resp.appid,resp.redirect_uri,resp.scope,resp.state);
+                }else{
+                    this.root.AcWingOS.api.window.close();
                 }
             }
         });

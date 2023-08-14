@@ -21,7 +21,7 @@ class Particle extends GameObject{
 
     update(){
         if( this.move_length<this.eps || this.speed<this.eps){
-            this.destory();
+            this.destroy();
             return false;
         }
 

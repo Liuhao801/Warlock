@@ -38,16 +38,20 @@ class GamePlayground{
 
         this.width=this.$playground.width();
         this.height=this.$playground.height();
-        this.friction=0.7;  //地形的摩擦力
-
         this.game_map=new GameMap(this);
+        this.friction=0.7;  //地形的摩擦力
+        this.mode=mode;
+        this.state="waiting";  //waiting->fighting->over
+        this.notice_board=new NoticeBoard(this);  //计分板
+        this.player_count=0;
+
         this.resize();
 
         this.players=[];
         this.players.push(new Player(this,this.width/2/this.scale,0.5,0.05,"snow",0.2,"me",this.root.settings.username,this.root.settings.photo));
 
         if(mode==="single_mode"){
-            for(let i=0;i<7;i++){
+            for(let i=0;i<5;i++){
                 this.players.push(new Player(this,this.width/2/this.scale,0.5,0.05,this.get_color(),0.2,"robot"));
             }
         }else if(mode==="multi_mode"){

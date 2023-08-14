@@ -51,7 +51,7 @@ class MultiPlayer(AsyncWebsocketConsumer):
         await self.channel_layer.group_send(  #向房间内所有玩家发送新玩家的信息
             self.room_name,
             {
-                'type':'group_create_player',  #接受广播的函数名
+                'type':'group_send_event',  #接受广播的函数名
                 'event':'create_player',
                 'uuid':data['uuid'],
                 'username':data['username'],
@@ -59,7 +59,62 @@ class MultiPlayer(AsyncWebsocketConsumer):
             }
         )
 
-    async def group_create_player(self,data):
+    async def move_to(self,data):
+        await self.channel_layer.group_send(
+            self.room_name,
+            {
+                'type':'group_send_event',
+                'event':'move_to',
+                'uuid':data['uuid'],
+                'tx':data['tx'],
+                'ty':data['ty'],
+            }
+        )
+
+    async def shoot_ball(self,data):
+        await self.channel_layer.group_send(
+                self.room_name,
+                {
+                    'type':'group_send_event',
+                    'event':'shoot_ball',
+                    'uuid':data['uuid'],
+                    'tx':data['tx'],
+                    'ty':data['ty'],
+                    'ball_type':data['ball_type'],
+                    'ball_uuid':data['ball_uuid'],
+                }
+            )
+
+    async def attack(self,data):
+        await self.channel_layer.group_send(
+                self.room_name,
+                {
+                    'type':'group_send_event',
+                    'event':'attack',
+                    'uuid':data['uuid'],
+                    'attackee_uuid':data['attackee_uuid'],
+                    'x':data['x'],
+                    'y':data['y'],
+                    'angle':data['angle'],
+                    'damage':data['damage'],
+                    'ball_type':data['ball_type'],
+                    'ball_uuid':data['ball_uuid'],
+                }
+            )
+
+    async def flash(self,data):
+        await self.channel_layer.group_send(
+                self.room_name,
+                {
+                    'type':'group_send_event',
+                    'event':'flash',
+                    'uuid':data['uuid'],
+                    'tx':data['tx'],
+                    'ty':data['ty'],
+                }
+            )
+
+    async def group_send_event(self,data):  #广播事件
         await self.send(text_data=json.dumps(data))
 
 
@@ -68,4 +123,11 @@ class MultiPlayer(AsyncWebsocketConsumer):
         event=data['event']
         if event=='create_player':
             await self.create_player(data)
-
+        elif event=='move_to':
+            await self.move_to(data)
+        elif event=='shoot_ball':
+            await self.shoot_ball(data)
+        elif event=='attack':
+            await self.attack(data)
+        elif event=="flash":
+            await self.flash(data)

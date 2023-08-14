@@ -26,11 +26,11 @@ class GameObject{
     update(){  //每一帧执行一次
     }
 
-    on_destory(){  //被销毁前执行
+    on_destroy(){  //被销毁前执行
     }
 
-    destory(){  //销毁该物体
-        this.on_destory();
+    destroy(){  //销毁该物体
+        this.on_destroy();
 
         for(let i=0;i<GAME_OBJECTS.length;i++){
             if(GAME_OBJECTS[i]===this){
