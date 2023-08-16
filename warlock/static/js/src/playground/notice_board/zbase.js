@@ -3,7 +3,7 @@ class NoticeBoard extends GameObject{
         super();
         this.playground=playground;
         this.ctx=this.playground.game_map.ctx;
-        this.text="已就绪:0人";
+        this.text="正在匹配...";
         this.start();
     }
 

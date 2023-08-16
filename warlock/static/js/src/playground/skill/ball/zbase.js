@@ -29,8 +29,8 @@ class Ball extends GameObject{
             this.damage=0.01;
         }else if(this.type==="iceball"){  //减速、五发一个
             this.color="#146EA6";
-            this.speed=0.4;
-            this.damage=0.008;
+            this.speed=0.4
+            this.damage=0.009;
         }
     }
 

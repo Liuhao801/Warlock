@@ -10,15 +10,32 @@ class GamePlayground{
 
 
     get_color(){
-        let colors=["red","yellow","blue","green","pink","purple","Gray","Orange","Aqua","Gold"];
+        let colors=["yellow","blue","green","pink","purple","Gray","Aqua","Gold"];
         return colors[Math.floor(Math.random()*colors.length)];
+    }
+
+    create_uuid(){
+        let res="";
+        for(let i=0;i<8;i++){
+            let x=parseInt(Math.floor(Math.random()*10));
+            res+=x;
+        }
+        return res;
     }
 
     start(){
         let outer=this;
-        $(window).resize(function(){  //监听窗口大小
+        let uuid=this.create_uuid();
+        $(window).on(`resize.${uuid}`,function(){  //监听窗口大小
             outer.resize();
         });
+
+        if(this.root.AcWingOS){
+            this.root.AcWingOS.api.window.on_close(function(){
+                $(window).off(`resize.${uuid}`);
+                outer.hide();
+            });
+        }
     }
 
     resize(){  //根据窗口大小调整画布大小
@@ -43,6 +60,7 @@ class GamePlayground{
         this.mode=mode;
         this.state="waiting";  //waiting->fighting->over
         this.notice_board=new NoticeBoard(this);  //计分板
+        this.score_board=new ScoreBoard(this);  //结果牌
         this.player_count=0;
 
         this.resize();
@@ -67,6 +85,26 @@ class GamePlayground{
     }
 
     hide(){  //关闭playground界面
+        while(this.players && this.players.length>0){
+            this.players[0].destroy();
+        }
+
+        if(this.game_map){
+            this.game_map.destroy();
+            this.game_map=null;
+        }
+
+        if(this.notice_board){
+            this.notice_board.destroy();
+            this.notice_board=null;
+        }
+
+        if(this.score_board){
+            this.score_board.destroy();
+            this.score_board=null;
+        }
+
+        this.$playground.empty();  //清空所有html元素
         this.$playground.hide();
     }
 }

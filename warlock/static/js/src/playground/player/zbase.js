@@ -48,7 +48,6 @@ class Player extends GameObject{
 
     start(){
         this.playground.player_count++;
-        this.playground.notice_board.write("正在匹配旗鼓相当的对手...");
 
         if(this.playground.player_count>=3){
             this.playground.state="fighting";
@@ -194,7 +193,7 @@ class Player extends GameObject{
         }
 
         this.radius-=damage;  //受到伤害半径变小
-        if(this.radius<=this.eps){
+        if(this.radius<this.eps){
             this.destroy();
             return false;
         }
@@ -219,12 +218,20 @@ class Player extends GameObject{
     update(){
         this.spent_time+=this.timedelta/1000;
 
+        this.update_win();
         if(this.character==="me"&&this.playground.state==="fighting"){
             this.update_coldtime();
         }
 
         this.update_move();
         this.render();
+    }
+
+    update_win(){
+        if(this.playground.state==="fighting" && this.character==="me" && this.playground.players.length===1){
+            this.playground.state="over";
+            this.playground.score_board.win();
+        }
     }
 
     update_coldtime(){  //更新技能冷却时间
@@ -356,9 +363,11 @@ class Player extends GameObject{
     }
 
     on_destroy(){
-        if(this.character==="me"){
+        if(this.character==="me" && this.playground.state==="fighting"){
             this.playground.state="over";  //游戏结束
+            this.playground.score_board.lose();
         }
+
         for(let i=0;i<this.playground.players.length;i++){
             if(this.playground.players[i]===this){
                 this.playground.players.splice(i,1);

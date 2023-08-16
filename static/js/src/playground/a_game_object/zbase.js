@@ -26,6 +26,9 @@ class GameObject{
     update(){  //每一帧执行一次
     }
 
+    late_update(){  //每一帧最后执行
+    }
+
     on_destroy(){  //被销毁前执行
     }
 
@@ -54,6 +57,12 @@ let GAME_ANIMATION = function(timestamp){
             obj.update();
         }
     }
+
+    for(let i=0;i<GAME_OBJECTS.length;i++){
+        let obj=GAME_OBJECTS[i];
+        obj.late_update();
+    }
+
     last_timestamp=timestamp;
 
     requestAnimationFrame(GAME_ANIMATION);

@@ -30,7 +30,9 @@ class ChatField{
                         outer.$input.val("");  //清空
                         let username=outer.playground.root.settings.username;
                         outer.add_message(username,text);
-                        outer.playground.mps.send_message(username,text);
+                        if(outer.playground.state==="fighting"){
+                            outer.playground.mps.send_message(username,text);
+                        }
                     }else{
                         outer.hide_input();
                     }
@@ -66,13 +68,15 @@ class ChatField{
     }
 
     show_input(){
-        this.show_history();
+        if(this.func_id) clearTimeout(this.func_id);
+        this.$history.show();
         this.$input.show();
         this.$input.focus();
         this.is_open=true;
     }
 
     hide_input(){
+        this.$history.hide();
         this.$input.hide();
         this.playground.game_map.$canvas.focus();
         this.is_open=false;
