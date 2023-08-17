@@ -90,7 +90,7 @@ class Player extends GameObject{
                     }
                     outer.fireball_coldtime=2;
                 }else if(outer.cur_skill==="iceball"){
-                    let ball=outer.shoot_ball(tx,ty,"iceball");
+                    let ball=outer.shoot_ball(tx,ty,"iceball")
                     if(outer.playground.mode==="multi_mode"){
                         outer.playground.mps.send_shoot_ball(tx,ty,"iceball",ball.uuid);
                     }

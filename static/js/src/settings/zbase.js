@@ -104,9 +104,29 @@ class Settings{
         if(this.platform==="ACAPP"){
             this.getinfo_acapp();
         }else if(this.platform==="WEB"){
-            this.getinfo_web();
+            if(this.root.access){
+                this.getinfo_web();
+                this.refresh_jwt_token();
+            }else{
+                this.login()
+            }
             this.add_listening_events();
         }
+    }
+
+    refresh_jwt_token(){
+        setInterval(()=>{
+            $.ajax({
+                url:'https://app5846.acapp.acwing.com.cn/settings/token/refresh/',
+                type:'post',
+                data:{
+                    'refresh':this.root.refresh,
+                },
+                success:resp=>{
+                    this.root.access=resp.access;
+                }
+            });
+        },4.5*60*1000);
     }
 
     add_listening_events(){
@@ -149,31 +169,31 @@ class Settings{
         this.$register.show();
     }
 
-    login_on_remote(){  //登录远程服务器
-        let outer=this;
-        let username=this.$login_username.val();
-        let password=this.$login_password.val();
+    login_on_remote(username,password){  //登录远程服务器
+        username=username || this.$login_username.val();
+        password=password || this.$login_password.val();
         this.$login_error_message.empty();
 
         $.ajax({
-            url:"https://app5846.acapp.acwing.com.cn/settings/login/",
-            type:'GET',
+            url:"https://app5846.acapp.acwing.com.cn/settings/token/",
+            type:'post',
             data:{
                 username:username,
                 password:password,
             },
-            success:function(resp){
-                if(resp.result==="success"){
-                    location.reload();  //刷新当前页
-                }else{
-                    outer.$login_error_message.html(resp.result);
-                }
+            success: resp =>{
+                this.root.access=resp.access;
+                this.root.refresh=resp.refresh;
+                this.refresh_jwt_token();
+                this.getinfo_web();
+            },
+            error:()=>{
+                this.$login_error_message.html("用户名或密码错误");
             }
         });
     }
 
     register_on_remote(){  //注册远程服务器
-        let outer=this;
         let username=this.$register_username.val();
         let password=this.$register_password.val();
         let password_confirm=this.$register_password_confirm.val();
@@ -181,17 +201,17 @@ class Settings{
 
         $.ajax({
             url:"https://app5846.acapp.acwing.com.cn/settings/register/",
-            type:'GET',
+            type:'post',
             data:{
                 username:username,
                 password:password,
                 password_confirm:password_confirm,
             },
-            success:function(resp){
+            success:resp =>{
                 if(resp.result==="success"){
-                    location.reload();  //刷新当前页
+                    this.login_on_remote(username,password);
                 }else{
-                    outer.$register_error_message.html(resp.result);
+                    this.$register_error_message.html(resp.result);
                 }
             }
         });
@@ -203,15 +223,9 @@ class Settings{
         }
 
         if(this.platform==="WEB"){
-            $.ajax({
-                url:'https://app5846.acapp.acwing.com.cn/settings/logout/',
-                type:'GET',
-                success:function(resp){
-                    if(resp.result==='success'){
-                        location.reload();
-                    }
-                }
-            });
+            this.root.access="";
+            this.root.refresh="";
+            location.href="/";
         }
     }
 
@@ -235,6 +249,9 @@ class Settings{
                 outer.photo=resp.photo;
                 outer.hide();
                 outer.root.menu.show();
+                outer.root.access=resp.access;
+                outer.root.refresh=resp.refresh;
+                outer.refresh_jwt_token();
             }else{
                 this.root.AcWingOS.api.window.close();
             }
@@ -264,6 +281,9 @@ class Settings{
             type:"GET",
             data:{
                 platform:outer.platform,
+            },
+            headers:{
+                'Authorization':"Bearer "+this.root.access,
             },
             success:function(resp){
                 if(resp.result==="success"){

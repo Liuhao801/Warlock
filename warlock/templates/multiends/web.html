@@ -11,7 +11,7 @@
     <script type="module">
         import {Game} from "{% static 'js/dist/warlock.js' %}";
         $(document).ready(function(){
-            let game=new Game("game_1");
+            let game=new Game("game_1",null,"{{access}}","{{refresh}}");
         });
     </script>
 </body>
