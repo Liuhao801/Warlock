@@ -9,5 +9,3 @@
 释放技能：鼠标**左键** + **Q**（火球）/ **W**（冰球）/ **F**(闪现)。
 
 聊天功能：使用**enter**键打开/关闭聊天框，或发送消息。
-
-#### 项目地址：[https://app5846.acapp.acwing.com.cn/](https://app5846.acapp.acwing.com.cn/)
